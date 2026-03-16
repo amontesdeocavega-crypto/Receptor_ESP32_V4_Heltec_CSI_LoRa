@@ -107,7 +107,7 @@ static void wifi_csi_rx_cb(void *ctx, wifi_csi_info_t *info)
 
     // 2. Filtro visual (Imprime 1 de cada 50 paquetes)
     if (s_count % CONFIG_PRINT_SCALE_FACTOR  == 0) {
-        
+
         // --- PROTECCIÓN MUTEX PARA EL CSI ---
         if (xSemaphoreTake(serialMutex, portMAX_DELAY)) {
             // Cabecera CSV la primera vez
@@ -116,23 +116,21 @@ static void wifi_csi_rx_cb(void *ctx, wifi_csi_info_t *info)
                 // Cabecera: Tipo, Tx_ID, RSSI, Ruido, Timestap y matriz CSI
                 Serial.println("TYPE,Tx_ID,RSSI,NOISE,TIMESTAMP,DATA");
             }
+            // 1. Imprimimos la cabecera directamente
+            Serial.printf("\nCSI,TX_%d, RSSI: %d, Ruido: %d, Timestamp: %u, Matriz CSI [" , 
+                          tx_id, info->rx_ctrl.rssi, info->rx_ctrl.noise_floor, info->rx_ctrl.timestamp);
 
-            // 3. Impresión de los datos
-            Serial.printf("CSI,%d,%d,%d,%u, [", tx_id, info->rx_ctrl.rssi, info->rx_ctrl.noise_floor, info->rx_ctrl.timestamp);
-
-            // Imprimir la matriz de datos en bruto
+            // 2. Imprimimos los números directamente
             int8_t *csi_data = (int8_t *)info->buf;
-            
             for (int i = 0; i < info->len; i++) {
-                Serial.printf("%d", csi_data[i]);
-                if (i < info->len - 1) {
-                    Serial.print(",");
-                }
+                Serial.print(csi_data[i]);
+                if (i < info->len - 1) Serial.print(",");
             }
-            Serial.println("]");
 
+            // 3. Impresión de la matriz cargada anteriormente con los datos
+            Serial.println("]");
             xSemaphoreGive(serialMutex);
-        } // --- FIN PROTECCIÓN MUTEX ---
+        } 
     }
     s_count++;
 }
@@ -264,6 +262,9 @@ void LoRaTask(void *pvParameters) {
 // SETUP PRINCIPAL
 // ==========================================
 void setup() {
+  
+  // Le damos un buffer grande al USB para que cargue la matriz entera de golpe
+  Serial.setTxBufferSize(4096);
   // Velocidad para volcar datos a la Raspberry Pi sin cuellos de botella
   Serial.begin(921600);
   
