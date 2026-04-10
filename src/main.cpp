@@ -117,7 +117,7 @@ static void wifi_csi_rx_cb(void *ctx, wifi_csi_info_t *info)
                 Serial.println("TYPE,Tx_ID,RSSI,NOISE,TIMESTAMP,DATA");
             }
             // 1. Imprimimos la cabecera directamente
-            Serial1.printf("CSI,TX_%d, %d, %d, %u, Matriz CSI [" , 
+            Serial1.printf("CSI,TX_%d,%d,%d,%u,[" , 
                           tx_id, info->rx_ctrl.rssi, info->rx_ctrl.noise_floor, info->rx_ctrl.timestamp);
 
             // 2. Imprimimos los números directamente
@@ -224,12 +224,12 @@ void LoRaTask(void *pvParameters) {
           if (xSemaphoreTake(serialMutex, portMAX_DELAY)) {
               Serial1.print(F("[LoRa_RX],"));
               Serial1.print(id_tx);
-              Serial1.print(F(" ,"));
+              Serial1.print(F(","));
               Serial1.print(timestamp);
-              Serial1.print(F(" ,"));
+              Serial1.print(F(","));
               Serial1.print(rssi);
-              Serial1.print(F(" ,"));
-              Serial1.print(snr);
+              Serial1.print(F(","));
+              Serial1.println(snr);
               xSemaphoreGive(serialMutex);
           }
           
