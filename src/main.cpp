@@ -42,7 +42,7 @@ void setFlag(void) {
 
 // ESCALA VISUAL: Imprime 1 de cada 50 paquetes para no saturar la pantalla.
 // Ponerlo a 1 cuando vayas a conectar la Raspberry para extraer todos los datos.
-#define CONFIG_PRINT_SCALE_FACTOR         25  
+#define CONFIG_PRINT_SCALE_FACTOR         1  
 
 // MAC Base: Aceptará 1A:00:00:00:00:01, 02, 03 y 04
 static const uint8_t TX_MAC_PREFIX[] = {0x1a, 0x00, 0x00, 0x00, 0x00};
@@ -117,18 +117,18 @@ static void wifi_csi_rx_cb(void *ctx, wifi_csi_info_t *info)
                 Serial.println("TYPE,Tx_ID,RSSI,NOISE,TIMESTAMP,DATA");
             }
             // 1. Imprimimos la cabecera directamente
-            Serial.printf("\nCSI,TX_%d, RSSI: %d, Ruido: %d, Timestamp: %u, Matriz CSI [" , 
+            Serial1.printf("CSI,TX_%d, %d, %d, %u, Matriz CSI [" , 
                           tx_id, info->rx_ctrl.rssi, info->rx_ctrl.noise_floor, info->rx_ctrl.timestamp);
 
             // 2. Imprimimos los números directamente
             int8_t *csi_data = (int8_t *)info->buf;
             for (int i = 0; i < info->len; i++) {
-                Serial.print(csi_data[i]);
-                if (i < info->len - 1) Serial.print(",");
+                Serial1.print(csi_data[i]);
+                if (i < info->len - 1) Serial1.print(",");
             }
 
             // 3. Impresión de la matriz cargada anteriormente con los datos
-            Serial.println("]");
+            Serial1.println("]");
             xSemaphoreGive(serialMutex);
         } 
     }
@@ -222,16 +222,14 @@ void LoRaTask(void *pvParameters) {
 
           // --- PROTECCIÓN MUTEX PARA LORA VÁLIDO ---
           if (xSemaphoreTake(serialMutex, portMAX_DELAY)) {
-              Serial.print(F("[LoRa_RX] VÁLIDO -> "));
-              Serial.print(F("ID_Tx: "));
-              Serial.print(id_tx);
-              Serial.print(F(" | Timestamp: "));
-              Serial.print(timestamp);
-              Serial.print(F(" | RSSI: "));
-              Serial.print(rssi);
-              Serial.print(F(" dBm | SNR: "));
-              Serial.print(snr);
-              Serial.println(F(" dB"));
+              Serial1.print(F("[LoRa_RX],"));
+              Serial1.print(id_tx);
+              Serial1.print(F(" ,"));
+              Serial1.print(timestamp);
+              Serial1.print(F(" ,"));
+              Serial1.print(rssi);
+              Serial1.print(F(" ,"));
+              Serial1.print(snr);
               xSemaphoreGive(serialMutex);
           }
           
@@ -259,14 +257,20 @@ void LoRaTask(void *pvParameters) {
 }
 
 // ==========================================
-// SETUP PRINCIPAL
+// Bucle principal
 // ==========================================
+#define RPI_SERIAL_BAUD 4000000 
+#define RPI_RX_PIN      18      
+#define RPI_TX_PIN      17
 void setup() {
   
   // Le damos un buffer grande al USB para que cargue la matriz entera de golpe
   Serial.setTxBufferSize(4096);
-  // Velocidad para volcar datos a la Raspberry Pi sin cuellos de botella
+  // Velocidad para volcar datos en la terminal
   Serial.begin(921600);
+  // --- Puerto serie 1 para transmitir hacia la Raspberry Pi ---
+  Serial1.setTxBufferSize(8192); 
+  Serial1.begin(RPI_SERIAL_BAUD, SERIAL_8N1, RPI_RX_PIN, RPI_TX_PIN);
   
   // --- INICIALIZAR EL MUTEX ---
   serialMutex = xSemaphoreCreateMutex();
