@@ -260,8 +260,8 @@ void LoRaTask(void *pvParameters) {
 // Bucle principal
 // ==========================================
 #define RPI_SERIAL_BAUD 4000000 
-#define RPI_RX_PIN      18      
-#define RPI_TX_PIN      17
+#define RPI_RX_PIN      6      
+#define RPI_TX_PIN      7
 void setup() {
   
   // Le damos un buffer grande al USB para que cargue la matriz entera de golpe
